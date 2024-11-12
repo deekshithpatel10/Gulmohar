@@ -254,6 +254,9 @@ void clear_cache() {
       for (int j = 0; j < cache->associativity; j++) {
          // Set the valid bit to 0 (invalidate the cache line)
          cache->sets[i].lines[j].valid = 0;
+         cache->sets[i].lines[j].arrival_time = 0;
+         cache->sets[i].lines[j].last_use_time = 0;
+         cache->sets[i].lines[j].dirty = 0;
       }
    }
 }
@@ -289,3 +292,203 @@ void open_cache_output_file(char* file_name) {
    }
 
 }
+
+void cache_invalidate() {
+   // first write back dirty blocks, and use clear_cache();
+}
+
+int64_t get_data_for_register(uint32_t address, uint8_t funct3) {
+   int byte_offset = address & ((1 << cache->offset_length) - 1);
+   uint8_t *data = read_cache(address);
+
+   switch (funct3) {
+      case 0x0: {  // load byte
+         int8_t value = 0;
+         for (int i = 0; i < 1; i++)
+            value |= (data[byte_offset + i] << (i * 8));
+         return (int64_t)value;
+      }
+
+      case 0x1: {  // load half
+         int16_t value = 0;
+         for (int i = 0; i < 2; i++)
+            value |= (data[byte_offset + i] << (i * 8));
+         return (int64_t)value;
+      }
+
+      case 0x2: {  // load word
+         int32_t value = 0;
+         for (int i = 0; i < 4; i++) 
+            value |= (data[byte_offset + i] << (i * 8));
+         return (int64_t)value;
+      }
+
+      case 0x3: {  // load dword
+         int64_t value = 0;
+         for (int i = 0; i < 8; i++) 
+            value |= (data[byte_offset + i] << (i * 8));
+         return (int64_t)value;
+      }
+
+      case 0x4: {  // load byte (unsigned)
+         uint8_t value = 0;
+         for (int i = 0; i < 1; i++)
+            value |= (data[byte_offset + i] << (i * 8));
+         return (uint64_t)value;
+      }
+
+      case 0x5: {  // load half (unsigned)
+         uint16_t value = 0;
+         for (int i = 0; i < 2; i++)
+            value |= (data[byte_offset + i] << (i * 8));
+         return (uint64_t)value;
+      }
+
+      case 0x6: {  // load word (unsigned)
+         uint32_t value = 0;
+         for (int i = 0; i < 4; i++)
+            value |= (data[byte_offset + i] << (i * 8));
+         return (uint64_t)value;
+      }
+
+      default:
+         return 0;
+   }
+
+}
+
+uint8_t *read_cache(uint32_t address) {
+   // check for hit
+   cache->accesses++;
+   int index = (address >> cache->offset_length) & ((1 << cache->index_length) - 1);
+   uint32_t tag = (address >> (cache->offset_length + cache->index_length)) & ((1 << cache->tag_length) - 1);
+
+   for (int i = 0; i < cache->associativity; i++) {
+      if (cache->sets[index].lines[i].valid && cache->sets[index].lines[i].tag == tag) {
+         cache->hits++;
+         cache->sets[index].lines[i].last_use_time = cache->accesses;
+
+         if (cache->sets[index].lines[i].dirty == 0) 
+            fprintf(cache_output_file, "R: Address: 0x%X, Set: 0x%X, Hit, Tag: 0x%X, Clean\n", address, index, tag);
+         else 
+            fprintf(cache_output_file, "R: Address: 0x%X, Set: 0x%X, Hit, Tag: 0x%X, Dirty\n", address, index, tag);
+
+         fflush(cache_output_file);
+         return cache->sets[index].lines[i].block;
+      }
+   }
+
+
+   // cache read miss
+
+   cache->misses++;
+
+   // rep_policy --> 0 is LRU, 1 is FIFO, 2 is RANDOM
+   // write_policy --> 0 is write back, 1 is write through 
+
+   int replacement_line = 0;
+   int min_of_line;
+   
+
+   if (cache->rep_policy == 0){
+      min_of_line = cache->sets[index].lines[0].last_use_time;
+      for (int i = 0; i < cache->associativity; i++) {
+         if (cache->sets[index].lines[i].last_use_time < min_of_line) {
+            replacement_line = i;
+         }
+      }
+   }
+   else if (cache->rep_policy == 1) {
+      min_of_line = cache->sets[index].lines[0].arrival_time;
+      for (int i = 0; i < cache->associativity; i++) {
+         if (cache->sets[index].lines[i].arrival_time < min_of_line) {
+            replacement_line = i;
+         }
+      }
+   }
+   else if (cache->rep_policy == 2) {
+      replacement_line = rand() % cache->associativity;
+   }
+
+   if (cache->write_policy == 0 && cache->sets[index].lines[replacement_line].dirty && cache->sets[index].lines[replacement_line].valid) {
+      uint32_t address = (cache->sets[index].lines[replacement_line].tag << (cache->offset_length + cache->index_length) | (index << cache->offset_length));
+      for (int i = 0; i < cache->block_size; i++) 
+         write_memory_byte(address, cache->sets[index].lines[replacement_line].block[i]);
+   }
+
+   cache->sets[index].lines[replacement_line].arrival_time = cache->accesses;
+   cache->sets[index].lines[replacement_line].last_use_time = cache->accesses;
+   cache->sets[index].lines[replacement_line].tag = tag;
+   cache->sets[index].lines[replacement_line].valid = 1;
+   cache->sets[index].lines[replacement_line].dirty = 0;
+
+   uint32_t block_addr = (cache->sets[index].lines[replacement_line].tag << (cache->offset_length + cache->index_length) | (index << cache->offset_length));
+
+   for (int i = 0; i < cache->block_size; i++) 
+         cache->sets[index].lines[replacement_line].block[i] = read_memory_byte(block_addr + i);
+
+
+   fprintf(cache_output_file, "R: Address: 0x%X, Set: 0x%X, Miss, Tag: 0x%X, Clean\n", address, index, tag);
+   fflush(cache_output_file);
+   return cache->sets[index].lines[replacement_line].block;
+
+   // 
+}
+
+void write_cache(uint32_t address, uint64_t data, int size) {
+   
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

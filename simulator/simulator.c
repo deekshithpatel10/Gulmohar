@@ -623,14 +623,22 @@ void execute_i(uint32_t instruction) {
 
 void execute_l(uint32_t instruction) {
     uint8_t rd = (instruction >> 7) & 0b11111;
-    if (rd == 0) {
-        return;
-    }
+
     uint8_t funct3 = (instruction >> 12) & 0b111;
     uint8_t rs1 = (instruction >> 15) & 0b11111;
     uint32_t offset_raw = (instruction >> 20) & 0b111111111111;
     int64_t offset = sign_extend_12bit(offset_raw);
 
+    if(cache_enabled) {
+        uint32_t address = (uint64_t)(registers[rs1] + offset);
+        registers[rd] = get_data_for_register(address, funct3);
+        if(rd == 0) {registers[0] = 0;}
+        return;
+    }
+
+    if (rd == 0) {
+        return;
+    }
     switch (funct3) {
         case 0x0: {  // load byte
             registers[rd] = (int64_t)((int8_t)read_memory_byte((uint64_t)(registers[rs1] + offset)));

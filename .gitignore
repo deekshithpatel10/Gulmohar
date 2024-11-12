@@ -5,3 +5,5 @@ riscv_sim
 test/
 test.config
 sample.s
+expected.output
+sample.output

@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "assembler.h"
+#include "simulator.h"
+#include "utils.h"
+
 
 #ifndef CACHE
 #define CACHE
@@ -54,7 +58,13 @@ void output_cache_status();
 void clear_cache();
 void open_cache_output_file(char* file_name);
 
+uint8_t *read_cache(uint32_t address);
 
+void write_cache(uint32_t address, uint64_t data, int size);
+
+void cache_invalidate();
+
+int64_t get_data_for_register(uint32_t address, uint8_t funct3);
 
 
 
