@@ -1,0 +1,5 @@
+riscv_sim
+
+#for testing later, anything in the folder 
+#'test' should be ignored.
+test/
