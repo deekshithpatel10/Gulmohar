@@ -706,7 +706,30 @@ void execute_s(uint32_t instruction) {
     uint8_t rs2 = (instruction >> 20) & 0b11111;
     int64_t offset = sign_extend_12bit(imm);
 
+    if(cache_enabled) {
+        uint32_t address = registers[rs1] + offset;
+        int size = 0;
+        switch(funct3) {
+            case 0x0:
+                size = 1;
+                break;
 
+            case 0x1:
+                size = 2;
+                break;
+            
+            case 0x2:
+                size = 4;
+                break;
+            
+            case 0x3:
+                size = 8;
+                break;
+        }
+
+        write_cache(address, registers[2], size);
+        return;
+    }
 
     switch (funct3) {
         case 0x0: {  // store byte

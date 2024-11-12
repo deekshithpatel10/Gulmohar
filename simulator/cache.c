@@ -394,6 +394,7 @@ uint8_t *read_cache(uint32_t address) {
       min_of_line = cache->sets[index].lines[0].last_use_time;
       for (int i = 0; i < cache->associativity; i++) {
          if (cache->sets[index].lines[i].last_use_time < min_of_line) {
+            min_of_line = cache->sets[index].lines[i].last_use_time;
             replacement_line = i;
          }
       }
@@ -402,6 +403,7 @@ uint8_t *read_cache(uint32_t address) {
       min_of_line = cache->sets[index].lines[0].arrival_time;
       for (int i = 0; i < cache->associativity; i++) {
          if (cache->sets[index].lines[i].arrival_time < min_of_line) {
+            min_of_line = cache->sets[index].lines[i].arrival_time;
             replacement_line = i;
          }
       }
@@ -413,7 +415,7 @@ uint8_t *read_cache(uint32_t address) {
    if (cache->write_policy == 0 && cache->sets[index].lines[replacement_line].dirty && cache->sets[index].lines[replacement_line].valid) {
       uint32_t address = (cache->sets[index].lines[replacement_line].tag << (cache->offset_length + cache->index_length) | (index << cache->offset_length));
       for (int i = 0; i < cache->block_size; i++) 
-         write_memory_byte(address, cache->sets[index].lines[replacement_line].block[i]);
+         write_memory_byte(address + i, cache->sets[index].lines[replacement_line].block[i]);
    }
 
    cache->sets[index].lines[replacement_line].arrival_time = cache->accesses;
@@ -436,7 +438,105 @@ uint8_t *read_cache(uint32_t address) {
 }
 
 void write_cache(uint32_t address, uint64_t data, int size) {
-   
+   //check for hit
+   int offset = address & ((1 << cache->offset_length) - 1);
+   int index = (address >> cache->offset_length) & ((1 << cache->index_length) - 1);
+   uint32_t tag = (address >> (cache->offset_length + cache->index_length)) & ((1 << cache->tag_length) - 1);
+
+
+   // rep_policy --> 0 is LRU, 1 is FIFO, 2 is RANDOM
+   // write_policy --> 0 is write back, 1 is write through 
+   cache->accesses++;
+   for (int i = 0; i < cache->associativity; i++) {
+      if (cache->sets[index].lines[i].valid && cache->sets[index].lines[i].tag == tag) {
+         cache->hits++;
+         cache->sets[index].lines[i].last_use_time = cache->accesses;
+
+         if (cache->write_policy == 0) {
+            cache->sets[index].lines[i].dirty = 1;
+            for (int j = 0; j < size; j++)
+               cache->sets[index].lines[i].block[offset + j] = (data >> (j * 8)) & 0xFF;
+         }
+         else if (cache->write_policy == 1) {
+            for (int j = 0; j < size; j++)
+               cache->sets[index].lines[i].block[offset + j] = (data >> (j * 8)) & 0xFF;
+
+            for (int j = 0; j < size; j++)
+               write_memory_byte(address + j, (data >> (j * 8)) & 0xFF);
+         }
+
+         if (cache->sets[index].lines[i].dirty == 0) 
+            fprintf(cache_output_file, "W: Address: 0x%X, Set: 0x%X, Hit, Tag: 0x%X, Clean\n", address, index, tag);
+         else 
+            fprintf(cache_output_file, "W: Address: 0x%X, Set: 0x%X, Hit, Tag: 0x%X, Dirty\n", address, index, tag);
+
+         fflush(cache_output_file);
+         return;
+      }
+   }
+
+   cache->misses++;
+   int replacement_line = 0;
+   int min_of_line;
+
+   if (cache->rep_policy == 0){
+      min_of_line = cache->sets[index].lines[0].last_use_time;
+      for (int i = 0; i < cache->associativity; i++) {
+         if (cache->sets[index].lines[i].last_use_time < min_of_line) {
+            replacement_line = i;
+            min_of_line = cache->sets[index].lines[i].last_use_time;
+         }
+      }
+   }
+   else if (cache->rep_policy == 1) {
+      min_of_line = cache->sets[index].lines[0].arrival_time;
+      for (int i = 0; i < cache->associativity; i++) {
+         if (cache->sets[index].lines[i].arrival_time < min_of_line) {
+            replacement_line = i;
+            min_of_line = cache->sets[index].lines[i].arrival_time;
+         }
+      }
+   }
+   else if (cache->rep_policy == 2) {
+      replacement_line = rand() % cache->associativity;
+   }
+
+   if (cache->write_policy == 0 && cache->sets[index].lines[replacement_line].dirty && cache->sets[index].lines[replacement_line].valid) {
+      uint32_t address = ((cache->sets[index].lines[replacement_line].tag << (cache->offset_length + cache->index_length)) | (index << cache->offset_length));
+      for (int i = 0; i < cache->block_size; i++) 
+         write_memory_byte(address + i, cache->sets[index].lines[replacement_line].block[i]);
+   }
+
+   // for write back, also do allocate when miss
+   if (cache->write_policy == 0) {
+      cache->sets[index].lines[replacement_line].arrival_time = cache->accesses;
+      cache->sets[index].lines[replacement_line].dirty = 1;
+      cache->sets[index].lines[replacement_line].last_use_time = cache->accesses;
+      cache->sets[index].lines[replacement_line].tag = tag;
+      cache->sets[index].lines[replacement_line].valid = 1;
+
+      uint32_t block_addr = ((cache->sets[index].lines[replacement_line].tag << (cache->offset_length + cache->index_length)) | (index << cache->offset_length));
+      for (int i = 0; i < cache->block_size; i++) 
+            cache->sets[index].lines[replacement_line].block[i] = read_memory_byte(block_addr + i);
+
+      for (int i = 0; i < size; i++)
+         cache->sets[index].lines[replacement_line].block[offset + i] = ((data >> (i * 8)) & 0xFF);
+
+   }
+   else if (cache->write_policy == 1) {
+      // very few lines since no allocate
+      for (int i = 0; i < size; i++)
+         write_memory_byte(address + i, (data >> (i * 8)) & 0xFF);
+   }
+
+   if (cache->sets[index].lines[replacement_line].dirty == 0) 
+      fprintf(cache_output_file, "W: Address: 0x%X, Set: 0x%X, Miss, Tag: 0x%X, Clean\n", address, index, tag);
+   else 
+      fprintf(cache_output_file, "W: Address: 0x%X, Set: 0x%X, Miss, Tag: 0x%X, Dirty\n", address, index, tag);
+
+   fflush(cache_output_file);
+
+   return;
 }
 
 

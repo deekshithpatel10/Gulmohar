@@ -7,3 +7,4 @@ test.config
 sample.s
 expected.output
 sample.output
+.vscode
