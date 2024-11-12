@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
 #ifndef CACHE
 #define CACHE
 
@@ -52,4 +53,14 @@ void create_cache(int cache_size, int block_size, int associativity, int rep_pol
 void output_cache_status();
 void clear_cache();
 void open_cache_output_file(char* file_name);
+
+
+
+
+
+
+
+
+
+
 #endif

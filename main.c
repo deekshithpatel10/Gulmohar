@@ -150,17 +150,26 @@ _Bool execute_command(char* command) {
             printf("Nothing loaded. \n");
         } else if (current_instruction > max_instructions) {
             printf("Reached end of program. Load the file again to re-run.\n");
-        }
-        long int i = 0;
-        while(current_instruction <= max_instructions && residue == NULL) {
-            step();
-            i++;
-            if(break_line_found) {
-                break;
+        } else {
+            long int i = 0;
+            while(current_instruction <= max_instructions && residue == NULL) {
+                step();
+                i++;
+                if(break_line_found) {
+                    break;
+                }
+
+                if( i > 1000000) {
+                    printf("Timeout! Enter run again.");
+                    break;
+                }
             }
 
-            if( i > 1000000) {
-                printf("Timeout! Enter run again.");
+            if(cache_enabled) {
+                // print statistics
+                if(current_instruction > max_instructions) {
+                    // dump cache, clean cache
+                }
             }
         }
 
