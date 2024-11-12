@@ -46,5 +46,6 @@ extern cache_struct* cache;
 void enable_cache(char* config_file_name);
 void disable_cache();
 void free_cache();
-
+void create_cache(int cache_size, int block_size, int associativity, int rep_policy, int write_policy);
+void output_cache_status();
 #endif

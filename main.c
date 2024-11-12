@@ -250,7 +250,7 @@ _Bool execute_command(char* command) {
         } else if(strcmp(cache_command, "disable") == 0) {
             char* residue = strtok(NULL, "\0");
             if(!residue) {
-                printf("Going to disable cache.\n");
+                disable_cache();
             } else {
                 red("Not a valid command.\n");
             }
@@ -259,7 +259,7 @@ _Bool execute_command(char* command) {
         } else if(strcmp(cache_command, "status") == 0) {
             char* residue = strtok(NULL, "\0");
             if(!residue) {
-                printf("Going to print status.\n");
+                output_cache_status();
             } else {
                 red("Not a valid command.\n");
             }

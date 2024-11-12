@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "cache.h"
 #include "utils.h"
@@ -9,6 +10,10 @@
 
 
 void enable_cache(char* config_file_name) {
+   cache_enabled = false;
+   free_cache();     // always free cache since new cache structure is being given 
+
+
    //first read the file and extract all data
    //file_name not null verified in main
    FILE *config_file = fopen(config_file_name, "r");
@@ -95,20 +100,143 @@ void enable_cache(char* config_file_name) {
       return;      
    }
 
-   printf("C=%d, B=%d, A=%d, Rep=%d, Wri=%d\n", cache_size, block_size, associativity, rep_policy, write_policy);
+   //printf("C=%d, B=%d, A=%d, Rep=%d, Wri=%d\n", cache_size, block_size, associativity, rep_policy, write_policy);
 
    // Close the file after reading
    fclose(config_file);
    free(policy_str);
    free(write_str);
 
+   // before creating cache, check if it's fully associative
+   if(associativity == 0) {
+      associativity = cache_size / block_size;
+   }
+
+   create_cache(cache_size, block_size, associativity, rep_policy, write_policy);
    cache_enabled = true;
 }
 
+
 void disable_cache() {
    cache_enabled = false;
+   free_cache();
+}
+
+void output_cache_status() {
+   if(cache_enabled) {
+      printf("Cache Size: %d\n", cache->cache_size);
+      printf("Block Size: %d\n", cache->block_size);
+      printf("Associativity: %d\n", cache->associativity);
+
+      printf("Replacement Policy: ");
+      switch(cache->rep_policy) {
+         case 0:
+            printf("LRU\n");
+            break;
+         case 1:
+            printf("FIFO\n");
+            break;
+         case 2:
+            printf("RANDOM\n");
+            break;
+      }
+
+      printf("Write Back Policy: ");
+      switch(cache->write_policy) {
+         case 0:
+            printf("WB\n");
+            break;
+         case 1:
+            printf("WT\n");
+            break;
+      }
+   } else {
+      printf("Cache disabled\n");
+   }
 }
 
 void free_cache() {
+   if (cache == NULL) {
+     return;  // No cache to wipe
+   }
 
+   int no_of_sets = (int)pow((double)2, (double)cache->index_length);
+   // Free each cache set, 
+   if (cache->sets != NULL) {
+      for (int i = 0; i < no_of_sets; i++) {
+         cache_set *set = &cache->sets[i];
+
+         // Free each cache line
+         if (set->lines != NULL) {
+            for (int j = 0; j < cache->associativity; j++) {
+               cache_line *line = &set->lines[j];
+
+               // Free the block memory for each line
+               if (line->block != NULL) {
+                  free(line->block);
+                  line->block = NULL;  
+               }
+            }
+
+            free(set->lines);
+            set->lines = NULL;  
+         }
+      }
+
+      free(cache->sets);
+      cache->sets = NULL;  
+   }
+
+   free(cache);
+   cache = NULL;  // Set cache pointer to NULL after freeing
+}
+
+void create_cache(int cache_size, int block_size, int associativity, int rep_policy, int write_policy) {
+
+   // Initialize the cache structure
+   cache = (cache_struct*)malloc(sizeof(cache_struct));
+   cache->cache_size = cache_size;
+   cache->block_size = block_size;
+   cache->associativity = associativity;
+   cache->rep_policy = rep_policy;
+   cache->write_policy = write_policy;
+
+   // All stats are zero in the beginning
+   cache->accesses = 0;
+   cache->hits = 0;
+   cache->misses = 0;
+
+   // Calculate index, tag, and offset lengths
+   cache->offset_length = (int)log2(block_size); // Number of bits for block offset
+   cache->index_length = (int)log2(cache_size / (block_size * associativity)); // Index bits
+   cache->tag_length = 20 - cache->index_length - cache->offset_length; // Remaining bits for the tag
+
+   // Allocate memory for cache sets
+   int num_sets = cache_size / (block_size * associativity);
+   cache->sets = (cache_set*)malloc(num_sets * sizeof(cache_set));
+
+   // Initialize each cache set
+   for (int i = 0; i < num_sets; i++) {
+      cache->sets[i].lines = (cache_line*)malloc(associativity * sizeof(cache_line));
+
+      // Initialize each cache line
+      for (int j = 0; j < associativity; j++) {
+         cache->sets[i].lines[j].tag = 0;
+         cache->sets[i].lines[j].block = (uint8_t*)malloc(block_size * sizeof(uint8_t));  // Allocate block memory
+         cache->sets[i].lines[j].valid = 0;
+         cache->sets[i].lines[j].dirty = 0;
+         cache->sets[i].lines[j].last_use_time = 0;
+         cache->sets[i].lines[j].arrival_time = 0;
+      }
+   }
+
+   // printf("Cache Initialized:\n");
+   // printf("Cache Size: %d bytes\n", cache_size);
+   // printf("Block Size: %d bytes\n", block_size);
+   // printf("Associativity: %d\n", associativity);
+   // printf("Replacement Policy: %d\n", rep_policy);
+   // printf("Write Policy: %d\n", write_policy);
+   // printf("Index Length: %d bits\n", cache->index_length);
+   // printf("Tag Length: %d bits\n", cache->tag_length);
+   // printf("Offset Length: %d bits\n", cache->offset_length);
 }

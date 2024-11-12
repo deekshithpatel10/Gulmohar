@@ -5,7 +5,7 @@ CFLAGS = -g -Wall -Wextra -std=c11
 all: final run
 
 final: main.o utils.o assembler.o simulator.o cache.o
-	@$(CC) $(CFLAGS) -o riscv_sim main.o assembler.o simulator.o utils.o cache.o
+	@$(CC) $(CFLAGS) -o riscv_sim main.o assembler.o simulator.o utils.o cache.o -lm
 
 main.o: main.c ./simulator/utils.h ./simulator/assembler.h ./simulator/simulator.h
 	@$(CC) $(CFLAGS) -c main.c
