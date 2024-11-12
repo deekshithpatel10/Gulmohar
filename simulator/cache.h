@@ -1,11 +1,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifndef CACHE
 #define CACHE
 
 extern _Bool cache_enabled;
+extern FILE* cache_output_file;
 
 typedef struct cache_line {
    uint32_t tag;
@@ -48,4 +50,6 @@ void disable_cache();
 void free_cache();
 void create_cache(int cache_size, int block_size, int associativity, int rep_policy, int write_policy);
 void output_cache_status();
+void clear_cache();
+void open_cache_output_file(char* file_name);
 #endif

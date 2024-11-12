@@ -4,3 +4,4 @@ riscv_sim
 #'test' should be ignored.
 test/
 test.config
+sample.s

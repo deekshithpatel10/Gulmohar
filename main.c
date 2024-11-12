@@ -10,6 +10,7 @@
 
 _Bool cache_enabled = false;
 cache_struct* cache = NULL;
+FILE* cache_output_file = NULL;
 
 
 label* label_array = NULL;  // array to store the labels

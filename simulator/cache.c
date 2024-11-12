@@ -240,3 +240,52 @@ void create_cache(int cache_size, int block_size, int associativity, int rep_pol
    // printf("Tag Length: %d bits\n", cache->tag_length);
    // printf("Offset Length: %d bits\n", cache->offset_length);
 }
+
+// Function to clear cache lines when new file is loaded(set valid bit to 0)
+void clear_cache() {
+   if (cache == NULL) {
+      return; // If cache is not initialized, do nothing
+   }
+
+   int no_of_sets = cache->cache_size / (cache->block_size * cache->associativity);
+   // Iterate over all cache sets
+   for (int i = 0; i < no_of_sets; i++) {
+      // Iterate over each cache line in the set
+      for (int j = 0; j < cache->associativity; j++) {
+         // Set the valid bit to 0 (invalidate the cache line)
+         cache->sets[i].lines[j].valid = 0;
+      }
+   }
+}
+
+void open_cache_output_file(char* file_name) {
+   char input_filename[256];  // don't mutate the file_name
+   strcpy(input_filename, file_name);
+
+   
+   char output_filename[256];  
+
+   char *dot_pos = strrchr(input_filename, '.');
+   if (dot_pos != NULL) {
+      // Terminate the string at the dot to remove the extension and append ".output"
+      *dot_pos = '\0';
+   }
+
+   // Append ".output" to the modified filename
+   strcpy(output_filename, input_filename);
+   strcat(output_filename, ".output");
+
+   if(cache_output_file) {
+      // close the previous file if not closed. 
+      fclose(cache_output_file);
+      cache_output_file = NULL;
+   }
+
+   cache_output_file = fopen(output_filename, "w");
+
+   if (cache_output_file == NULL) {
+      red("Error opening cache output file\n");
+      return;
+   }
+
+}

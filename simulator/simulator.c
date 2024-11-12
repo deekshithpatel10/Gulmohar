@@ -5,6 +5,7 @@
 
 #include "./assembler.h"
 #include "./utils.h"
+#include "./cache.h"
 
 void load_data();
 
@@ -55,6 +56,12 @@ _Bool load_file(char* file_name) {
                     strcpy(main_node->function_name, "main");
                     main_node->line_num = instructions_array[1].file_line_num - 1;
                     main_node->next = NULL;
+
+                    // Initialize cache
+                    if(cache_enabled) {
+                        clear_cache();
+                        open_cache_output_file(file_name);
+                    }
 
                     return true;
                 } else {
