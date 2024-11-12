@@ -224,6 +224,72 @@ _Bool execute_command(char* command) {
         } else {
             show_stack();
         }
+
+    // all CACHE related commands
+    } else if(strcmp(token, "cache_sim") == 0) {
+
+        char* cache_command = strtok(NULL, " ");
+        if(cache_command == NULL) {
+            red("Please specify a command.\n");
+
+        //1. cache_sim enable config_file
+        } else if(strcmp(cache_command, "enable") == 0) {
+            char* file_name = strtok(NULL, "\0");
+            if(file_name) {
+                printf("This is your file %s\n", file_name);
+            } else {
+                red("No config file provided.\n");
+            }
+
+        //2. cache_sim disable
+        } else if(strcmp(cache_command, "disable") == 0) {
+            char* residue = strtok(NULL, "\0");
+            if(!residue) {
+                printf("Going to disable cache.\n");
+            } else {
+                red("Not a valid command.\n");
+            }
+
+        //3. cache_sim status
+        } else if(strcmp(cache_command, "status") == 0) {
+            char* residue = strtok(NULL, "\0");
+            if(!residue) {
+                printf("Going to print status.\n");
+            } else {
+                red("Not a valid command.\n");
+            }
+
+        //4. cache_sim invalidate
+        } else if(strcmp(cache_command, "invalidate") == 0) {
+            char* residue = strtok(NULL, "\0");
+            if(!residue) {
+                printf("Going to invalidate cache.\n");
+            } else {
+                red("Not a valid command.\n");
+            }
+
+        //5. cache_sim dump myFile.out (myFile.out is specified by the user)
+        } else if(strcmp(cache_command, "dump") == 0) {
+            char* file_name = strtok(NULL, "\0");
+            if(file_name) {
+                printf("This is your file %s\n", file_name);
+            } else {
+                red("No output location provided.\n");
+            }
+
+        //6. cache_sim stats
+        } else if(strcmp(cache_command, "stats") == 0) {
+            char* residue = strtok(NULL, "\0");
+            if(!residue) {
+                printf("Going to print stats.\n");
+            } else {
+                red("Not a valid command.\n");
+            }
+
+        } else {
+            red("Unknown command.\n");
+        }
+
     } else {
         red("Unknown command \"%s\".\n", token);
     }
