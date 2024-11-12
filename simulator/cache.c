@@ -259,6 +259,11 @@ void clear_cache() {
          cache->sets[i].lines[j].dirty = 0;
       }
    }
+
+   cache->accesses = 0;
+   cache->hits = 0;
+   cache->misses = 0;
+
 }
 
 void open_cache_output_file(char* file_name) {
@@ -542,7 +547,11 @@ void write_cache(uint32_t address, uint64_t data, int size) {
 void output_cache_stats() {
    if(cache_enabled) {
       printf("D-cache statistics: Accesses=%d, Hit=%d, Miss=%d, ", cache->accesses, cache->hits, cache->misses);
-      printf("Hit Rate=%.2f\n", (float)cache->hits/cache->accesses);
+      float hit_rate = 0;
+
+      if(cache->accesses != 0) hit_rate = (float)cache->hits/cache->accesses;
+      
+      printf("Hit Rate=%.2f\n", hit_rate);
    } else {
       printf("Cache disabled.\n");
    }
