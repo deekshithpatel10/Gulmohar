@@ -6,6 +6,11 @@
 #include "./simulator/assembler.h"
 #include "./simulator/simulator.h"
 #include "./simulator/utils.h"
+#include "./simulator/cache.h"
+
+_Bool cache_enabled = false;
+cache_struct* cache = NULL;
+
 
 label* label_array = NULL;  // array to store the labels
 int label_count = 0;        // number of labels in the input file
@@ -236,7 +241,7 @@ _Bool execute_command(char* command) {
         } else if(strcmp(cache_command, "enable") == 0) {
             char* file_name = strtok(NULL, "\0");
             if(file_name) {
-                printf("This is your file %s\n", file_name);
+                enable_cache(file_name);
             } else {
                 red("No config file provided.\n");
             }
