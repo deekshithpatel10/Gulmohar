@@ -539,6 +539,14 @@ void write_cache(uint32_t address, uint64_t data, int size) {
    return;
 }
 
+void output_cache_stats() {
+   if(cache_enabled) {
+      printf("D-cache statistics: Accesses=%d, Hit=%d, Miss=%d, ", cache->accesses, cache->hits, cache->misses);
+      printf("Hit Rate=%.2f\n", (float)cache->hits/cache->accesses);
+   } else {
+      printf("Cache disabled.\n");
+   }
+}
 
 
 

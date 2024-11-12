@@ -166,8 +166,9 @@ _Bool execute_command(char* command) {
             }
 
             if(cache_enabled) {
-                // print statistics
+                output_cache_stats();
                 if(current_instruction > max_instructions) {
+                    // program has ended
                     // dump cache, clean cache
                 }
             }
@@ -296,7 +297,7 @@ _Bool execute_command(char* command) {
         } else if(strcmp(cache_command, "stats") == 0) {
             char* residue = strtok(NULL, "\0");
             if(!residue) {
-                printf("Going to print stats.\n");
+                output_cache_stats();
             } else {
                 red("Not a valid command.\n");
             }

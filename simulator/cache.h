@@ -55,6 +55,7 @@ void disable_cache();
 void free_cache();
 void create_cache(int cache_size, int block_size, int associativity, int rep_policy, int write_policy);
 void output_cache_status();
+void output_cache_stats();
 void clear_cache();
 void open_cache_output_file(char* file_name);
 
