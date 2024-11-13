@@ -114,7 +114,9 @@ void enable_cache(char* config_file_name) {
 
    create_cache(cache_size, block_size, associativity, rep_policy, write_policy);
    if(!cache_output_file) {
-      open_cache_output_file(current_file_name);
+      if(current_file_name) {
+         open_cache_output_file(current_file_name);
+      }
    }
    cache_enabled = true;
 }
