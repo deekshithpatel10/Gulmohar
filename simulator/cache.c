@@ -113,6 +113,9 @@ void enable_cache(char* config_file_name) {
    }
 
    create_cache(cache_size, block_size, associativity, rep_policy, write_policy);
+   if(!cache_output_file) {
+      open_cache_output_file(current_file_name);
+   }
    cache_enabled = true;
 }
 
@@ -300,6 +303,33 @@ void open_cache_output_file(char* file_name) {
 
 void cache_invalidate() {
    // first write back dirty blocks, and use clear_cache();
+   if(!cache_enabled) {
+      printf("Cache disabled\n");
+      return;
+   }
+
+   int no_of_sets = cache->cache_size/(cache->associativity * cache->block_size);
+
+   for(int index = 0; index < no_of_sets; index++) {
+      for(int j = 0; j < cache->associativity; j++){
+         cache_line* current_line = &cache->sets[index].lines[j];
+
+         if(current_line->valid) {
+            // if current line is valid, write it back and set it to zero
+            if(cache->write_policy == 0 && current_line->dirty) {
+               uint32_t address = (current_line->tag << (cache->index_length + cache->offset_length)) | (index << cache->offset_length);
+               for(int i = 0; i < cache->block_size; i++) {
+                  write_memory_byte(address + i, current_line->block[i]);
+               }
+            }
+
+            current_line->arrival_time = 0;
+            current_line->last_use_time = 0;
+            current_line->dirty = 0;
+            current_line->valid = 0;
+         }
+      }
+   }
 }
 
 int64_t get_data_for_register(uint32_t address, uint8_t funct3) {
@@ -558,10 +588,14 @@ void output_cache_stats() {
 }
 
 void dump_cache_content(char* filename) {
+   if(!cache_enabled) {
+      printf("Cache disabled\n");
+      return;
+   }
+
    FILE *dump_file = fopen(filename, "w");
 
    if (dump_file == NULL) {
-      // If fopen fails, print an error message.
       red("Error opening dump file\n");
       return;
    }

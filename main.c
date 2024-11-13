@@ -168,8 +168,8 @@ _Bool execute_command(char* command) {
             if(cache_enabled) {
                 output_cache_stats();
                 if(current_instruction > max_instructions) {
-                    // program has ended
-                    // dump cache, clean cache
+                    dump_cache_content("program_end_dump");
+                    clear_cache();  // only clears cache, doesn't write back dirty blocks
                 }
             }
         }
@@ -279,7 +279,7 @@ _Bool execute_command(char* command) {
         } else if(strcmp(cache_command, "invalidate") == 0) {
             char* residue = strtok(NULL, "\0");
             if(!residue) {
-                printf("Going to invalidate cache.\n");
+                cache_invalidate();
             } else {
                 red("Not a valid command.\n");
             }
