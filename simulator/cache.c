@@ -342,49 +342,49 @@ int64_t get_data_for_register(uint32_t address, uint8_t funct3) {
       case 0x0: {  // load byte
          int8_t value = 0;
          for (int i = 0; i < 1; i++)
-            value |= (data[byte_offset + i] << (i * 8));
+            value |= (((uint64_t)(data[byte_offset + i])) << (i * 8));
          return (int64_t)value;
       }
 
       case 0x1: {  // load half
          int16_t value = 0;
          for (int i = 0; i < 2; i++)
-            value |= (data[byte_offset + i] << (i * 8));
+            value |= (((uint64_t)(data[byte_offset + i])) << (i * 8));
          return (int64_t)value;
       }
 
       case 0x2: {  // load word
          int32_t value = 0;
          for (int i = 0; i < 4; i++) 
-            value |= (data[byte_offset + i] << (i * 8));
+            value |= (((uint64_t)(data[byte_offset + i])) << (i * 8));
          return (int64_t)value;
       }
 
       case 0x3: {  // load dword
          int64_t value = 0;
          for (int i = 0; i < 8; i++) 
-            value |= (data[byte_offset + i] << (i * 8));
+            value |= (((uint64_t)(data[byte_offset + i])) << (i * 8));
          return (int64_t)value;
       }
 
       case 0x4: {  // load byte (unsigned)
          uint8_t value = 0;
          for (int i = 0; i < 1; i++)
-            value |= (data[byte_offset + i] << (i * 8));
+            value |= (((uint64_t)(data[byte_offset + i])) << (i * 8));
          return (uint64_t)value;
       }
 
       case 0x5: {  // load half (unsigned)
          uint16_t value = 0;
          for (int i = 0; i < 2; i++)
-            value |= (data[byte_offset + i] << (i * 8));
+            value |= (((uint64_t)(data[byte_offset + i])) << (i * 8));
          return (uint64_t)value;
       }
 
       case 0x6: {  // load word (unsigned)
          uint32_t value = 0;
          for (int i = 0; i < 4; i++)
-            value |= (data[byte_offset + i] << (i * 8));
+            value |= (((uint64_t)(data[byte_offset + i])) << (i * 8));
          return (uint64_t)value;
       }
 

@@ -169,7 +169,6 @@ _Bool execute_command(char* command) {
                 output_cache_stats();
                 if(current_instruction > max_instructions) {
                     dump_cache_content("program_end_dump.text");
-                    clear_cache();  // only clears cache, doesn't write back dirty blocks
                 }
             }
         }
