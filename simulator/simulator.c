@@ -727,7 +727,7 @@ void execute_s(uint32_t instruction) {
                 break;
         }
 
-        write_cache(address, registers[2], size);
+        write_cache(address, registers[rs2], size);
         return;
     }
 
