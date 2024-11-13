@@ -67,11 +67,7 @@ void cache_invalidate();
 
 int64_t get_data_for_register(uint32_t address, uint8_t funct3);
 
-
-
-
-
-
+void dump_cache_content(char* filename);
 
 
 #endif

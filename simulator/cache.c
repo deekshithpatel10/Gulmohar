@@ -557,6 +557,32 @@ void output_cache_stats() {
    }
 }
 
+void dump_cache_content(char* filename) {
+   FILE *dump_file = fopen(filename, "w");
+
+   if (dump_file == NULL) {
+      // If fopen fails, print an error message.
+      red("Error opening dump file\n");
+      return;
+   }
+
+   int no_of_sets = cache->cache_size/(cache->block_size * cache->associativity);
+   for(int index = 0; index < no_of_sets; index++) {
+      for(int j = 0; j < cache->associativity; j++) {
+         if(cache->sets[index].lines[j].valid) {
+            cache_line current_line = cache->sets[index].lines[j];
+            if(current_line.dirty) {
+               fprintf(dump_file, "Set: 0x%X, Tag: 0x%X, Dirty\n", index, current_line.tag);
+            } else {
+               fprintf(dump_file, "Set: 0x%X, Tag: 0x%X, Clean\n", index, current_line.tag);
+            }
+         }
+      }
+   }
+
+   fclose(dump_file);
+}
+
 
 
 

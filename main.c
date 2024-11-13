@@ -288,7 +288,7 @@ _Bool execute_command(char* command) {
         } else if(strcmp(cache_command, "dump") == 0) {
             char* file_name = strtok(NULL, "\0");
             if(file_name) {
-                printf("This is your file %s\n", file_name);
+                dump_cache_content(file_name);
             } else {
                 red("No output location provided.\n");
             }
